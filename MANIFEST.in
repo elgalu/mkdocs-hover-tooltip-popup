@@ -1,0 +1,2 @@
+include mkdocs_hover_tooltip_popup/custom/*
+include mkdocs_hover_tooltip_popup/panzoom/*

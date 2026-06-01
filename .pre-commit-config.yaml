@@ -1,0 +1,182 @@
+minimum_pre_commit_version: 1.21.0
+fail_fast: true
+default_stages: [pre-commit, pre-push]
+repos:
+  # meta
+
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+
+  # formatters & linters
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.15.15
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        require_serial: false  # Enable parallel file processing
+      - id: ruff-format
+        require_serial: false  # Enable parallel file processing
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: "v3.21.2"
+    hooks:
+      - id: pyupgrade
+        require_serial: false  # Enable parallel file processing
+
+  # linters
+  - repo: https://github.com/PyCQA/bandit
+    rev: "1.9.4"
+    hooks:
+      - id: bandit
+        args: ["-x", "tests"]
+        stages: ["pre-push"]
+
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: "6.3.0"
+    hooks:
+      - id: pydocstyle
+        args: ["--ignore=D203,D213"]
+        require_serial: false  # Enable parallel file processing
+        additional_dependencies:
+          - "toml>=0.10.2"
+
+  # Local hooks - organized by category
+  - repo: local
+    hooks:
+      # Python testing and linting
+      - id: pytest
+        name: pytest
+        entry: uv run --no-sync pytest
+        language: system
+        types: [python]
+        files: ^(tests\/.*test_.*\.py|mkdocs_hover_tooltip_popup\/.*\.py)$
+        pass_filenames: false
+        args: ["-v", "--cov=mkdocs_hover_tooltip_popup", "--cov-report=term-missing", "--tb=short"]
+        # https://github.com/pre-commit/mirrors-pylint/issues/11
+
+      # Dependency management
+      - id: uv-lock-check
+        name: uv lock --check
+        # Verifies that the lockfile (uv.lock) is up-to-date with the project's dependencies defined in pyproject.toml
+        entry: uv lock --check
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # TOML validation
+      - id: toml-syntax-check
+        name: TOML Syntax Check
+        description: Validate TOML files for syntax errors and duplicate keys
+        entry: python3 -c "import sys; import tomllib; [tomllib.load(open(f, 'rb')) for f in sys.argv[1:]] and print('All TOML files valid')"
+        language: system
+        files: \.toml$
+        require_serial: false  # Enable parallel file processing
+
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: "v2.4.2"
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
+
+  - repo: https://github.com/crate-ci/typos
+    rev: "v1.47.0"
+    hooks:
+      - id: typos
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: "v1.38.0"
+    hooks:
+      - id: yamllint
+        args: ["--strict", "-d", "{rules: {line-length: {max: 180}}}"]
+        require_serial: false  # Enable parallel file processing
+
+  # Disabled yamlfmt as it conflicts with ?
+  # - repo: https://github.com/google/yamlfmt
+  #   rev: "v0.14.0"
+  #   hooks:
+  #     - id: yamlfmt
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v2.1.0"
+    hooks:
+      - id: mypy
+        # Stubs are declared as additional_dependencies so the hook env has them
+        # without needing pip at runtime (some prek/uv envs don't ship pip).
+        additional_dependencies:
+          - types-beautifulsoup4
+          - types-PyYAML
+          - types-Markdown
+        exclude: ^(tests/|debug_.*\.py$|test_.*\.py$)
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: "v0.48.0"
+    hooks:
+      - id: markdownlint
+        # Apply to all markdown files in the repository
+        files: \.md$
+        require_serial: false  # Enable parallel file processing
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v6.0.0"
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=2950']
+        # The bundled mermaid runtime is intentionally large (~3.2 MB at 11.15.0).
+        # We ship it offline so the docs site doesn't depend on unpkg.com at render
+        # time. Allow-list this single path; the cap stays for everything else.
+        exclude: ^docs/extra/js/mermaid-.*\.min\.js$
+      - id: check-docstring-first
+      - id: check-merge-conflict
+      # Disabled until we have symlinks again
+      # - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+        args: ["--unsafe"] # https://stackoverflow.com/a/59414199/511069
+      - id: debug-statements
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: detect-private-key
+      # - id: forbid-new-submodules
+      - id: check-executables-have-shebangs
+        # `no-commit-to-branch` protects main/master from direct push
+      # - id: no-commit-to-branch
+      - id: name-tests-test
+        args: ["--django"]
+      # Though there is overlap with ruff, these hooks are still useful for non-python files.
+      # Vendored, minified third-party bundles (panzoom, mermaid) must not be reformatted.
+      - id: mixed-line-ending
+        exclude: ^(mkdocs_hover_tooltip_popup/panzoom/panzoom\.min\.js|docs/extra/js/mermaid-.*\.min\.js)$
+      - id: end-of-file-fixer
+        exclude: ^(mkdocs_hover_tooltip_popup/panzoom/panzoom\.min\.js|docs/extra/js/mermaid-.*\.min\.js)$
+      - id: trailing-whitespace
+        exclude: ^(mkdocs_hover_tooltip_popup/panzoom/panzoom\.min\.js|docs/extra/js/mermaid-.*\.min\.js)$
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/pre-commit/sync-pre-commit-deps
+    rev: v0.0.4
+    hooks:
+      - id: sync-pre-commit-deps
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: "v1.10.0"
+    hooks:
+      - id: python-use-type-annotations
+      - id: python-no-log-warn
+      - id: python-no-eval
+      - id: python-check-mock-methods
+      - id: python-check-blanket-noqa

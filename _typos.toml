@@ -1,0 +1,9 @@
+# Configuration for the `typos` spell-checker.
+# Minified third-party bundles (Mermaid, panzoom) are not ours to fix and their
+# minified identifiers trip the dictionary, so exclude them from spell-checking.
+[files]
+extend-exclude = [
+    "*.min.js",
+    "mkdocs_hover_tooltip_popup/panzoom/panzoom.min.js",
+    "docs/extra/js/mermaid-*.min.js",
+]
