@@ -192,6 +192,13 @@ class HTMLPage:
                     for elem in found_elements:
                         if id(elem) in seen_ids:
                             continue
+                        # Elements inside a tooltips-data block are rendered tooltip
+                        # content, not page diagrams; never wrap them in a panzoom box.
+                        if (
+                            elem.find_parent(class_="hover-tooltip-popup-tooltips-data")
+                            is not None
+                        ):
+                            continue
                         if self._should_apply_panzoom(elem):
                             seen_ids.add(id(elem))
                             output.append(elem)

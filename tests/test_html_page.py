@@ -171,6 +171,41 @@ class TestElementFinding:
         html_page.add_to_page()
         assert str(html_page).count('class="hover-tooltip-popup-box"') == 1
 
+    def test_image_inside_tooltips_data_is_not_wrapped(self, mock_page, mock_mkdocs_config):
+        """An <img> in a tooltip's rendered content is never wrapped in a panzoom box.
+
+        Regression: with images enabled, an image embedded in a tooltip popover (inside
+        a .hover-tooltip-popup-tooltips-data block) was treated as a page diagram and
+        wrapped with pan/zoom controls, corrupting the tooltip markup.
+        """
+        html = (
+            "<html><body>"
+            '<pre class="mermaid"><code>flowchart LR\nA--&gt;B</code></pre>'
+            '<div class="hover-tooltip-popup-tooltips-data" hidden>'
+            '<div data-node-id="A"><p><img src="x.png" alt="x"></p></div>'
+            "</div>"
+            "</body></html>"
+        )
+        config = {
+            "selectors": [],
+            "include_selectors": [],
+            "exclude_selectors": [],
+            "images": True,
+        }
+
+        html_page = HTMLPage(html, config, mock_page, mock_mkdocs_config)
+
+        # The tooltip image must not be among the wrapped containers.
+        assert all(
+            elem.find_parent(class_="hover-tooltip-popup-tooltips-data") is None
+            for elem in html_page.containers
+        )
+        html_page.add_to_page()
+        # No panzoom box should appear inside the tooltips-data block.
+        rendered = str(html_page)
+        tooltip_start = rendered.index("hover-tooltip-popup-tooltips-data")
+        assert "hover-tooltip-popup-box" not in rendered[tooltip_start:]
+
 
 class TestPanzoomAddition:
     """Test panzoom functionality addition."""

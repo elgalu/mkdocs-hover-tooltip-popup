@@ -25,7 +25,14 @@ flowchart TD
 
 ```mermaid-tooltips
 - node: Lint
-  text: "Runs `ruff` and `ruff-format`. A failure here **blocks** the push."
+  text: |
+    ### Lint &amp; format
+
+    Runs **ruff** and *ruff-format*. A failure here **blocks** the push.
+
+    See the [contributing guide](https://elgalu.github.io/mkdocs-hover-tooltip-popup/).
+
+    <img src="../../images/assets/mermaid-diagram.png" alt="diagram" width="160">
 - node: Unit
   text: "Fast tests with `-m \"not e2e\"`. See the [testing docs](https://elgalu.github.io/mkdocs-hover-tooltip-popup/)."
 - node: E2E
@@ -61,7 +68,13 @@ stateDiagram-v2
 - node: Authorized
   text: "Permission check passed. The request may now touch protected resources."
 - node: Processing
-  text: "Business logic runs here. <br>Supports `inline code` and *emphasis*."
+  text: |
+    #### Processing stage
+
+    Business logic runs here. Supports **bold**, *emphasis*, `inline code`,
+    and a [deep link](https://elgalu.github.io/mkdocs-hover-tooltip-popup/Mermaid/).
+
+    ![flow](../../images/assets/mermaid-diagram.png){ width="150" }
 - node: Cached
   text: "Served from the cache layer: no recomputation needed."
 - node: Computed
@@ -88,7 +101,14 @@ graph LR
 
 ```mermaid-tooltips
 - node: Gateway
-  text: "Single **entry point**. Routes every external request to a downstream service."
+  text: |
+    ### API Gateway
+
+    Single **entry point**. Routes *every* external request to a downstream service.
+
+    Read the [routing rules](https://elgalu.github.io/mkdocs-hover-tooltip-popup/).
+
+    <img src="../../images/assets/mermaid-diagram.png" alt="topology" width="170">
 - node: Auth
   text: "Validates tokens against the [session cache](https://example.com). Stateless otherwise."
 - node: Catalog
