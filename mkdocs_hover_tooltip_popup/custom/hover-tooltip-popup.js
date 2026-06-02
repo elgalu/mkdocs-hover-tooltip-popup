@@ -355,6 +355,7 @@ function activate_zoom_pan() {
 
 const TOOLTIP_OFFSET = 12; // px gap between a node and its popover
 const TOOLTIP_CLOSE_DELAY = 250; // ms grace period so the cursor can move into the popover
+const TOOLTIP_MAX_SCALE = 4; // cap how large the popover grows when the diagram is zoomed in
 
 // Resolve the rendered diagram SVG that a tooltips-data div annotates. The div
 // immediately follows its diagram in the DOM; that sibling is either the diagram
@@ -413,10 +414,42 @@ function findTooltipTarget(svg, entry) {
   return null;
 }
 
+// Effective zoom scale applied to a node by the pan/zoom transforms above it.
+// pan/zoom applies a CSS matrix to the diagram container, so the product of the
+// x-scale (matrix `a`) of every transformed ancestor is the node's on-screen scale.
+// Plain translate transforms contribute a factor of 1, so they don't affect it.
+function getZoomScale(node) {
+  let scale = 1;
+  let el = node;
+  while (el && el !== document.body) {
+    const transform = window.getComputedStyle(el).transform;
+    if (transform && transform !== "none" && typeof DOMMatrixReadOnly !== "undefined") {
+      try {
+        const a = new DOMMatrixReadOnly(transform).a;
+        if (a) {
+          scale *= a;
+        }
+      } catch (e) {
+        /* unparsable transform; ignore */
+      }
+    }
+    el = el.parentElement;
+  }
+  // Never shrink below the base size (keeps text readable when zoomed out); cap the
+  // growth so a heavily zoomed diagram doesn't produce an unusably huge popover.
+  return Math.max(1, Math.min(scale, TOOLTIP_MAX_SCALE));
+}
+
 function positionTooltip(popover, node) {
   const rect = node.getBoundingClientRect();
-  const popWidth = popover.offsetWidth;
-  const popHeight = popover.offsetHeight;
+  // Scale the whole popover (text and any image) to track the diagram's zoom.
+  const scale = getZoomScale(node);
+  popover.style.transformOrigin = "top left";
+  popover.style.transform = scale === 1 ? "" : `scale(${scale})`;
+
+  // offsetWidth/Height are the unscaled box; the rendered box is scale times bigger.
+  const popWidth = popover.offsetWidth * scale;
+  const popHeight = popover.offsetHeight * scale;
 
   let top = rect.top + rect.height / 2 - popHeight / 2;
   // Default: to the left of the node so the node stays visible.
@@ -432,6 +465,7 @@ function positionTooltip(popover, node) {
   }
   top = Math.max(0, Math.min(top, window.innerHeight - popHeight));
 
+  // transform-origin is top-left, so left/top place the scaled box's top-left corner.
   popover.style.top = `${top}px`;
   popover.style.left = `${left}px`;
 }
