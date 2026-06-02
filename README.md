@@ -10,6 +10,8 @@ controls to Mermaid/D2 diagrams and images.
 
 > [Live Demo](https://elgalu.github.io/mkdocs-hover-tooltip-popup/)
 
+Published packages <https://pypi.org/project/mkdocs-hover-tooltip-popup/>
+
 ## Setup
 
 `pip install mkdocs-hover-tooltip-popup`
