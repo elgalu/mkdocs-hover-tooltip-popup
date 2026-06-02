@@ -217,12 +217,32 @@ function add_buttons(box, instance, zoomStep = DEFAULT_ZOOM_STEP) {
 // Left click is left untouched, so clicking diagram nodes and hovering/clicking inside
 // tooltips keeps working.
 function setupCanvasNavigation(elem, box, instance, zoomStep) {
-  // Mirror panzoom's own wheel-zoom curve so wheel-zoom matches the +/- buttons:
-  // scaleMultiplier = 1 - sign(delta) * min(0.25, |zoomStep * delta / 128|).
-  function wheelScaleMultiplier(delta) {
-    const sign = Math.sign(delta);
-    const adjusted = Math.min(0.25, Math.abs((zoomStep * delta) / 128));
-    return 1 - sign * adjusted;
+  // Wheel-zoom speed must feel consistent whether the input is a chunky mouse notch
+  // (large deltaY, few events) or a fine trackpad pinch (tiny deltaY, many events).
+  // We normalize deltaY across deltaMode to pixels, express it as a fraction of one
+  // typical mouse notch, then clamp the per-event zoom into [MIN, MAX]:
+  //   - MAX caps a single mouse notch so it isn't jarringly fast (Linux mice).
+  //   - MIN floors tiny trackpad steps so a pinch isn't sluggish (macOS trackpads).
+  // The configured zoom_step scales the curve (default 0.2 == 1x).
+  const WHEEL_PX_PER_NOTCH = 120; // a typical mouse wheel notch in pixel mode
+  const WHEEL_MAX_STEP = 0.12; // largest zoom fraction per wheel event
+  const WHEEL_MIN_STEP = 0.025; // smallest zoom fraction per wheel event
+  const WHEEL_LINE_PX = 16; // approx px per line for deltaMode === 1
+
+  function wheelScaleMultiplier(e) {
+    let px = e.deltaY;
+    if (e.deltaMode === 1) {
+      px *= WHEEL_LINE_PX; // lines -> px
+    } else if (e.deltaMode === 2) {
+      px *= box.clientHeight || 800; // pages -> px
+    }
+    const sign = Math.sign(px);
+    if (sign === 0) {
+      return 1;
+    }
+    const ratio = (Math.abs(px) / WHEEL_PX_PER_NOTCH) * (zoomStep / DEFAULT_ZOOM_STEP);
+    const step = Math.min(WHEEL_MAX_STEP, Math.max(WHEEL_MIN_STEP, ratio * WHEEL_MAX_STEP));
+    return 1 - sign * step;
   }
 
   // Wheel: zoom when ctrl/meta is held (or a pinch gesture sets ctrlKey), else pan.
@@ -232,11 +252,7 @@ function setupCanvasNavigation(elem, box, instance, zoomStep) {
       e.preventDefault();
       e.stopPropagation();
       if (e.ctrlKey || e.metaKey) {
-        let delta = e.deltaY;
-        if (e.deltaMode > 0) {
-          delta *= 100; // line/page deltas -> approximate pixels
-        }
-        const multiplier = wheelScaleMultiplier(delta);
+        const multiplier = wheelScaleMultiplier(e);
         if (multiplier !== 1) {
           instance.zoomTo(e.clientX, e.clientY, multiplier);
         }
