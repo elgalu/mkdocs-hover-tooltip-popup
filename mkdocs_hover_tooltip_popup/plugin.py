@@ -32,6 +32,7 @@ class HoverTooltipPopupPlugin(BasePlugin):
         ("always_show_hint", config_options.Type(bool, default=False)),
         ("show_zoom_buttons", config_options.Type(bool, default=False)),
         ("key", config_options.Type(str, default="alt")),
+        ("navigation", config_options.Type(str, default="miro")),
         ("include", config_options.Type(list, default=["*"])),
         ("exclude", config_options.Type(list, default=[])),
         ("include_selectors", config_options.Type(list, default=[])),
@@ -130,6 +131,16 @@ class HoverTooltipPopupPlugin(BasePlugin):
                 f"Invalid key '{key}'. Using default 'alt'. Valid options: {valid_keys}"
             )
             self.config["key"] = "alt"
+
+        # Validate navigation mode
+        valid_navigation = {"miro", "classic"}
+        navigation = self.config.get("navigation", "miro")
+        if navigation not in valid_navigation:
+            logger.warning(
+                f"Invalid navigation '{navigation}'. Using default 'miro'. "
+                f"Valid options: {valid_navigation}"
+            )
+            self.config["navigation"] = "miro"
 
         # Validate hint location
         valid_locations = {"top", "bottom"}

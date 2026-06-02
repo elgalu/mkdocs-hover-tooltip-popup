@@ -168,8 +168,12 @@ Plugin options (defined in `plugin.py::HoverTooltipPopupPlugin.config_scheme`, d
   `images` (`false`).
 - UI: `always_show_hint` (`false`), `hint_location` (`"bottom"` or `"top"`),
   `show_zoom_buttons` (`false`), `buttons_size` (`"1.25em"`), `full_screen` (`false`).
-- Zoom: `initial_zoom_level` (`1.0`), `zoom_step` (`0.2`), `key` (`"alt"`, also accepts
-  `ctrl` / `shift` / `none`).
+- Zoom: `initial_zoom_level` (`1.0`), `zoom_step` (`0.2`).
+- Navigation: `navigation` (`"miro"` default, or `"classic"`). In `miro` mode, the wheel /
+  trackpad two-finger drag pans, `ctrl`/`cmd`+wheel and trackpad pinch zoom, and right-mouse
+  drag pans (left click stays free for nodes/tooltips). In `classic` mode, the `key` modifier
+  (`"alt"` default, also `ctrl` / `shift` / `none`) gates the library's left-drag pan + wheel
+  zoom. The `key` option only applies in `classic` mode.
 - Pages: `exclude` (`[]`), `include` (`["*"]`).
 - Auto-detect: `auto_enable` (`true`), `auto_enable_threshold_lines` (`8`), `_nodes` (`6`),
   `_edges` (`5`), `_chars` (`200`).

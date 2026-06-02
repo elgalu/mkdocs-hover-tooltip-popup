@@ -71,6 +71,7 @@ class TestPluginInitialization:
             "always_show_hint",
             "show_zoom_buttons",
             "key",
+            "navigation",
             "include",
             "exclude",
             "include_selectors",
@@ -363,6 +364,23 @@ class TestPluginValidation:
         plugin.config = {"key": "invalid"}
         plugin._validate_config()
         assert plugin.config["key"] == "alt"
+
+    def test_validate_config_invalid_navigation_falls_back_to_miro(self, plugin):
+        """An unrecognized 'navigation' value is reset to the 'miro' default."""
+        plugin.config = {"navigation": "joystick"}
+        plugin._validate_config()
+        assert plugin.config["navigation"] == "miro"
+
+    def test_validate_config_classic_navigation_is_kept(self, plugin):
+        """A valid 'navigation' value ('classic') is preserved."""
+        plugin.config = {"navigation": "classic"}
+        plugin._validate_config()
+        assert plugin.config["navigation"] == "classic"
+
+    def test_navigation_defaults_to_miro(self, plugin):
+        """The navigation option defaults to 'miro' in the config scheme."""
+        defaults = {key: opt.default for key, opt in plugin.config_scheme}
+        assert defaults["navigation"] == "miro"
 
     def test_validate_config_invalid_hint_location_falls_back(self, plugin):
         """An unrecognized 'hint_location' is reset to the 'bottom' default."""

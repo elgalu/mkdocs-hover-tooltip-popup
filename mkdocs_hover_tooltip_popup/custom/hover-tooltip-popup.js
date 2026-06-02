@@ -204,6 +204,86 @@ function add_buttons(box, instance, zoomStep = DEFAULT_ZOOM_STEP) {
   });
 }
 
+// Miro-style navigation, layered on top of panzoom's public API. The library's own
+// mouse/wheel handlers are vetoed (see beforeWheel/beforeMouseDown), so we own input:
+//
+//   - Wheel / trackpad two-finger drag (no ctrl) -> PAN. Browsers report trackpad
+//     scrolling as wheel events with deltaX/deltaY and ctrlKey=false.
+//   - Ctrl/Cmd + wheel, and trackpad pinch (which the browser synthesizes as a wheel
+//     event with ctrlKey=true) -> ZOOM, centered on the cursor.
+//   - Right-mouse drag -> PAN (the box sets oncontextmenu="return false", so no menu).
+//
+// Left click is left untouched, so clicking diagram nodes and hovering/clicking inside
+// tooltips keeps working.
+function setupMiroNavigation(elem, box, instance, zoomStep) {
+  // Mirror panzoom's own wheel-zoom curve so wheel-zoom matches the +/- buttons:
+  // scaleMultiplier = 1 - sign(delta) * min(0.25, |zoomStep * delta / 128|).
+  function wheelScaleMultiplier(delta) {
+    const sign = Math.sign(delta);
+    const adjusted = Math.min(0.25, Math.abs((zoomStep * delta) / 128));
+    return 1 - sign * adjusted;
+  }
+
+  // Wheel: zoom when ctrl/meta is held (or a pinch gesture sets ctrlKey), else pan.
+  box.addEventListener(
+    "wheel",
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.ctrlKey || e.metaKey) {
+        let delta = e.deltaY;
+        if (e.deltaMode > 0) {
+          delta *= 100; // line/page deltas -> approximate pixels
+        }
+        const multiplier = wheelScaleMultiplier(delta);
+        if (multiplier !== 1) {
+          instance.zoomTo(e.clientX, e.clientY, multiplier);
+        }
+      } else {
+        // Two-finger trackpad drag (or wheel) pans the diagram.
+        instance.moveBy(-e.deltaX, -e.deltaY, false);
+      }
+    },
+    { passive: false },
+  );
+
+  // Right-mouse drag pans. Track the button globally so a drag that leaves the box
+  // still pans and releases cleanly.
+  let panning = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  box.addEventListener("mousedown", function (e) {
+    if (e.button !== 2) {
+      return; // only the right button starts a Miro pan; left stays free
+    }
+    e.preventDefault();
+    panning = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  window.addEventListener("mousemove", function (e) {
+    if (!panning) {
+      return;
+    }
+    instance.moveBy(e.clientX - lastX, e.clientY - lastY, false);
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  window.addEventListener("mouseup", function (e) {
+    if (e.button === 2) {
+      panning = false;
+    }
+  });
+
+  // Suppress the context menu on the diagram so right-drag never opens it.
+  box.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+  });
+}
+
 function activate_zoom_pan() {
   let boxes = document.querySelectorAll(".hover-tooltip-popup-box");
 
@@ -215,12 +295,14 @@ function activate_zoom_pan() {
   let zoomStep = DEFAULT_ZOOM_STEP; // Default zoom step
   let buttonsSize = "1.25em"; // Default button size
 
+  let navigation = "miro"; // Default navigation mode
   try {
     panzoomData = JSON.parse(meta_tag.content);
     selectors = panzoomData.selectors || [];
     initialZoomLevel = panzoomData.initial_zoom_level ?? DEFAULT_ZOOM_LEVEL;
     zoomStep = panzoomData.zoom_step ?? DEFAULT_ZOOM_STEP;
     buttonsSize = panzoomData.buttons_size ?? "1.25em";
+    navigation = panzoomData.navigation ?? "miro";
   } catch (e) {
     console.warn('Failed to parse panzoom data:', e);
   }
@@ -258,11 +340,18 @@ function activate_zoom_pan() {
     ) {
       elem.dataset.zoom = true;
 
-      // Create panzoom instance
+      const miro = navigation === "miro";
+
+      // In Miro mode we drive pan/zoom ourselves (see setupMiroNavigation): veto the
+      // library's built-in wheel and mouse-drag handling by returning truthy here. In
+      // classic mode the chosen modifier key gates the library's left-drag pan + wheel zoom.
       let instance = panzoom(elem, {
         minZoom: 0.5,
         zoomSpeed: zoomStep,
         beforeWheel: function (e) {
+          if (miro) {
+            return true; // veto built-in wheel; handled by setupMiroNavigation
+          }
           switch (key) {
             case "ctrl":
               return e.ctrlKey;
@@ -275,6 +364,9 @@ function activate_zoom_pan() {
           }
         },
         beforeMouseDown: function (e) {
+          if (miro) {
+            return true; // veto built-in mouse drag; handled by setupMiroNavigation
+          }
           switch (key) {
             case "ctrl":
               return e.ctrlKey && !e.button == 1;
@@ -288,6 +380,10 @@ function activate_zoom_pan() {
         },
         zoomDoubleClickSpeed: 1,
       });
+
+      if (miro) {
+        setupMiroNavigation(elem, box, instance, zoomStep);
+      }
 
       // Intercept keyboard zoom events to use our symmetric zoom functions
       box.addEventListener('keydown', function(e) {

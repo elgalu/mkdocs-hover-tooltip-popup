@@ -267,6 +267,8 @@ class TestPanzoomAddition:
         content = meta_tag.get("content", "")
         assert "selectors" in content
         assert "initial_zoom_level" in content
+        # navigation mode is emitted for the runtime; defaults to "miro"
+        assert '"navigation": "miro"' in content
 
     def test_no_assets_injected_without_diagrams(
         self, basic_config, mock_page, mock_mkdocs_config

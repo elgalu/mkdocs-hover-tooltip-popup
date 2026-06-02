@@ -14,11 +14,16 @@ graph TD
 
 ```
 
-The key for the activation can be [configured or disabled](./index.md#use-different-key)!
+## Mouse and trackpad
 
-## Mouse
+By default the plugin uses Miro-style navigation:
 
-Press ++alt++ and grab the diagram with your mouse to move it. The same applies to the zooming press ++alt++ and scroll.
+- Scroll wheel, or a trackpad two-finger drag, pans the diagram.
+- ++ctrl++ (or ++cmd++) + scroll, and a trackpad pinch, zoom in and out centered on the cursor.
+- Right-mouse drag pans. Left click stays free, so you can click nodes and the links inside tooltips.
+
+To use the older modifier-key behavior instead, set `navigation: classic` (then ++alt++ + drag/scroll
+pans/zooms; the modifier is [configurable or disabled](./index.md#use-different-key)).
 
 ## Keyboard
 

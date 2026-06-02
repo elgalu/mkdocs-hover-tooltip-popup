@@ -363,4 +363,94 @@ class TestTooltipHover:
         pg.wait_for_timeout(150)
         assert pg.locator(".hover-tooltip-popup-tooltip-popover").count() == 1
         context.close()
+
+
+class TestMiroNavigation:
+    """Miro-style navigation (the default): wheel pans, ctrl-wheel zooms, right-drag pans."""
+
+    @staticmethod
+    def _open(browser, url):
+        context = browser.new_context(viewport={"width": 1000, "height": 800})
+        pg = context.new_page()
+        errors: list[str] = []
+        pg.on("pageerror", lambda exc: errors.append(str(exc)))
+        pg.goto(url)
+        pg.wait_for_load_state("networkidle")
+        pg.wait_for_function("document.querySelectorAll('[data-zoom]').length >= 1")
+        pg.page_errors = errors  # type: ignore[attr-defined]
+        return context, pg
+
+    def test_plain_wheel_pans(self, _browser, tmp_path):
+        """A wheel event without ctrl pans (translation changes, scale does not)."""
+        context, pg = self._open(_browser, make_site(tmp_path))
+        sel = ".hover-tooltip-popup-box [data-zoom]"
+        assert _scale_of(pg, sel) == 1.0
+        box = pg.locator(".hover-tooltip-popup-box").first.bounding_box()
+        pg.evaluate(
+            """(pt) => document.querySelector('.hover-tooltip-popup-box').dispatchEvent(
+                new WheelEvent('wheel', {deltaX: 40, deltaY: 60, ctrlKey: false,
+                    clientX: pt.x, clientY: pt.y, bubbles: true, cancelable: true}))""",
+            {"x": box["x"] + box["width"] / 2, "y": box["y"] + box["height"] / 2},
+        )
+        pg.wait_for_timeout(200)
+        transform = pg.locator(sel).first.evaluate("e => e.style.transform")
+        # Panned: translation present, scale still 1.
+        assert "matrix(1," in transform
+        assert transform != "matrix(1, 0, 0, 1, 0, 0)"
+        assert pg.page_errors == []
+        context.close()
+
+    def test_ctrl_wheel_zooms(self, _browser, tmp_path):
+        """A wheel event with ctrlKey zooms (scale changes)."""
+        context, pg = self._open(_browser, make_site(tmp_path))
+        sel = ".hover-tooltip-popup-box [data-zoom]"
+        assert _scale_of(pg, sel) == 1.0
+        box = pg.locator(".hover-tooltip-popup-box").first.bounding_box()
+        pg.evaluate(
+            """(pt) => document.querySelector('.hover-tooltip-popup-box').dispatchEvent(
+                new WheelEvent('wheel', {deltaY: -120, ctrlKey: true,
+                    clientX: pt.x, clientY: pt.y, bubbles: true, cancelable: true}))""",
+            {"x": box["x"] + box["width"] / 2, "y": box["y"] + box["height"] / 2},
+        )
+        pg.wait_for_timeout(200)
+        assert _scale_of(pg, sel) > 1.0
+        context.close()
+
+    def test_right_drag_pans(self, _browser, tmp_path):
+        """Holding the right mouse button and dragging pans the diagram."""
+        context, pg = self._open(_browser, make_site(tmp_path))
+        sel = ".hover-tooltip-popup-box [data-zoom]"
+        box = pg.locator(".hover-tooltip-popup-box").first.bounding_box()
+        cx = box["x"] + box["width"] / 2
+        cy = box["y"] + min(box["height"] / 2, 200)
+        pg.mouse.move(cx, cy)
+        pg.mouse.down(button="right")
+        pg.mouse.move(cx + 100, cy + 70, steps=5)
+        pg.mouse.up(button="right")
+        pg.wait_for_timeout(200)
+        transform = pg.locator(sel).first.evaluate("e => e.style.transform")
+        assert transform != "matrix(1, 0, 0, 1, 0, 0)"
+        assert pg.page_errors == []
+        context.close()
+
+    def test_classic_mode_right_drag_does_not_pan(self, _browser, tmp_path):
+        """In classic mode the Miro layer is absent, so right-drag does not pan.
+
+        (The library only pans on left/middle drag, and never on right-button drag.)
+        """
+        context, pg = self._open(_browser, make_site(tmp_path, navigation="classic", key="alt"))
+        sel = ".hover-tooltip-popup-box [data-zoom]"
+        box = pg.locator(".hover-tooltip-popup-box").first.bounding_box()
+        cx = box["x"] + box["width"] / 2
+        cy = box["y"] + min(box["height"] / 2, 200)
+        pg.mouse.move(cx, cy)
+        pg.mouse.down(button="right")
+        pg.mouse.move(cx + 100, cy + 70, steps=5)
+        pg.mouse.up(button="right")
+        pg.wait_for_timeout(200)
+        # No right-drag pan in classic mode: transform stays at identity.
+        assert pg.locator(sel).first.evaluate("e => e.style.transform") in (
+            "",
+            "matrix(1, 0, 0, 1, 0, 0)",
+        )
         context.close()
