@@ -1,0 +1,16 @@
+.mark-as-read-button {
+  background-color: var(--md-typeset-a-color);
+  border: none;
+  color: hsla(var(--md-hue), 0%, 100%, 1);
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  display: inline-block;
+  border-radius: 0.1rem;
+  transition-duration: 0.2s;
+  cursor: pointer;
+}
+
+.mark-as-read-button:hover {
+  background-color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+}
