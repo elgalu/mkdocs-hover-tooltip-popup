@@ -73,12 +73,6 @@ function maximize(instance, box, max, min) {
   min.classList.remove("hover-tooltip-popup-hidden");
 }
 
-function escapeFullScreen(e, box, max, min, instance) {
-
-  if (e.keyCode == 27) {
-    minimize(instance, box, max, min);
-  }
-}
 
 function panzoom_reset(instance, box) {
   // Suppress the debounced save handlers: moveTo/zoomAbs below emit pan/zoom
@@ -199,9 +193,20 @@ function add_buttons(box, instance, zoomStep = DEFAULT_ZOOM_STEP) {
       minimize(instance, box, max, min); // Always reset to default browser zoom level
     });
   }
-  box.addEventListener("keydown", function (e) {
-    escapeFullScreen(e, box, max, min, instance); // Always reset to default browser zoom level
-  });
+  // Escape exits fullscreen. Listen on document, not the box: a <div> has no keyboard
+  // focus by default (no tabindex), so a keydown bound to the box would never fire unless
+  // the user happened to focus something inside it. The handler is gated on this box being
+  // in fullscreen, so it is a no-op otherwise and never interferes with other Escape uses.
+  if (min != undefined && max != undefined) {
+    document.addEventListener("keydown", function (e) {
+      if (
+        (e.key === "Escape" || e.keyCode === 27) &&
+        box.classList.contains("hover-tooltip-popup-fullscreen")
+      ) {
+        minimize(instance, box, max, min);
+      }
+    });
+  }
 }
 
 // Canvas-style navigation (direct manipulation, like an infinite canvas), layered on
@@ -264,15 +269,25 @@ function setupCanvasNavigation(elem, box, instance, zoomStep) {
     { passive: false },
   );
 
-  // Right-mouse drag pans. Track the button globally so a drag that leaves the box
-  // still pans and releases cleanly.
+  // Right-mouse drag pans, with two deliberate carve-outs:
+  //   - Shift+right-click is reserved for the browser's native context menu (Copy,
+  //     Inspect, ...). We neither pan nor suppress the menu when Shift is held.
+  //   - Panning self-heals: mousemove checks e.buttons, so if a mouseup is ever missed
+  //     (the context menu grabbed it, or the release happened off-window) the pan stops
+  //     instead of sticking to the cursor.
   let panning = false;
   let lastX = 0;
   let lastY = 0;
 
+  function stopPanning() {
+    panning = false;
+  }
+
   box.addEventListener("mousedown", function (e) {
-    if (e.button !== 2) {
-      return; // only the right button starts a canvas pan; left stays free
+    // Only a plain right-button press starts a canvas pan; left click stays free, and
+    // Shift+right-click is left for the browser menu.
+    if (e.button !== 2 || e.shiftKey) {
+      return;
     }
     e.preventDefault();
     panning = true;
@@ -284,6 +299,12 @@ function setupCanvasNavigation(elem, box, instance, zoomStep) {
     if (!panning) {
       return;
     }
+    // Bit 2 of e.buttons is the right button. If it is no longer held, a mouseup was
+    // missed — stop panning rather than getting stuck following the cursor.
+    if ((e.buttons & 2) === 0) {
+      stopPanning();
+      return;
+    }
     instance.moveBy(e.clientX - lastX, e.clientY - lastY, false);
     lastX = e.clientX;
     lastY = e.clientY;
@@ -291,12 +312,20 @@ function setupCanvasNavigation(elem, box, instance, zoomStep) {
 
   window.addEventListener("mouseup", function (e) {
     if (e.button === 2) {
-      panning = false;
+      stopPanning();
     }
   });
+  // Releasing outside the window or losing focus must also end a pan.
+  window.addEventListener("blur", stopPanning);
 
-  // Suppress the context menu on the diagram so right-drag never opens it.
+  // Suppress the context menu on a plain right-click so a right-drag never opens it,
+  // but let Shift+right-click through to the browser's native menu (and make sure we
+  // are not left in a panning state when the menu opens).
   box.addEventListener("contextmenu", function (e) {
+    if (e.shiftKey) {
+      stopPanning();
+      return;
+    }
     e.preventDefault();
   });
 }

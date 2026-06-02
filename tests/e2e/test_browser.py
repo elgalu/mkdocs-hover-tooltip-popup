@@ -99,6 +99,30 @@ class TestFullscreen:
         page.wait_for_timeout(150)
         assert box.evaluate("e => e.classList.contains('hover-tooltip-popup-fullscreen')") is False
 
+    def test_escape_exits_fullscreen(self, page):
+        """Pressing Escape leaves fullscreen, even though the box has no keyboard focus.
+
+        The handler is on `document` (a `<div>` is not focusable), gated on this box being
+        in fullscreen, so Escape elsewhere is a no-op.
+        """
+        box = page.locator(".hover-tooltip-popup-box").first
+        is_fs = "e => e.classList.contains('hover-tooltip-popup-fullscreen')"
+
+        # Escape while not in fullscreen does nothing.
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(100)
+        assert box.evaluate(is_fs) is False
+
+        page.locator(".hover-tooltip-popup-box .hover-tooltip-popup-max").first.click()
+        page.wait_for_timeout(150)
+        assert box.evaluate(is_fs) is True
+
+        # Focus is on the page body, not the box; Escape must still exit fullscreen.
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(150)
+        assert box.evaluate(is_fs) is False
+        assert page.page_errors == []
+
 
 class TestHint:
     """The info button toggles the hint box visibility."""
@@ -441,6 +465,68 @@ class TestCanvasNavigation:
         pg.wait_for_timeout(200)
         transform = pg.locator(sel).first.evaluate("e => e.style.transform")
         assert transform != "matrix(1, 0, 0, 1, 0, 0)"
+        assert pg.page_errors == []
+        context.close()
+
+    def test_shift_right_click_does_not_pan_or_block_menu(self, _browser, tmp_path):
+        """Shift+right-click is reserved for the browser's native context menu.
+
+        Regression: it must NOT start a pan, and the contextmenu must NOT be
+        default-prevented (so Copy / Inspect / ... stay available). A plain right-click
+        still suppresses the menu so right-drag panning works.
+        """
+        context, pg = self._open(_browser, make_site(tmp_path))
+        box = pg.locator(".hover-tooltip-popup-box").first.bounding_box()
+        pt = {"x": box["x"] + box["width"] / 2, "y": box["y"] + min(box["height"] / 2, 200)}
+        result = pg.evaluate(
+            """(pt) => {
+                const box = document.querySelector('.hover-tooltip-popup-box');
+                const sel = '.hover-tooltip-popup-box [data-zoom]';
+                const mk = (type, opts) => new MouseEvent(type, Object.assign(
+                    {clientX: pt.x, clientY: pt.y, bubbles: true, cancelable: true}, opts));
+                // Shift+right press then drag (right button held): must not pan.
+                box.dispatchEvent(mk('mousedown', {button: 2, shiftKey: true, buttons: 2}));
+                window.dispatchEvent(mk('mousemove', {buttons: 2, clientX: pt.x + 60, clientY: pt.y + 60}));
+                const panned = getComputedStyle(document.querySelector(sel)).transform
+                    !== 'matrix(1, 0, 0, 1, 0, 0)';
+                // Native menu must be allowed on Shift, suppressed on a plain right-click.
+                const shiftPrevented = !box.dispatchEvent(mk('contextmenu', {button: 2, shiftKey: true}));
+                const plainPrevented = !box.dispatchEvent(mk('contextmenu', {button: 2, shiftKey: false}));
+                return {panned, shiftPrevented, plainPrevented};
+            }""",
+            pt,
+        )
+        assert result["panned"] is False
+        assert result["shiftPrevented"] is False  # browser menu allowed
+        assert result["plainPrevented"] is True  # plain right-click suppressed for panning
+        context.close()
+
+    def test_right_drag_pan_self_heals_on_missed_mouseup(self, _browser, tmp_path):
+        """A missed right-button release must not leave the pan stuck to the cursor.
+
+        If the mouseup is swallowed (e.g. the native menu grabbed it), the next
+        mousemove sees the button is no longer held and stops panning.
+        """
+        context, pg = self._open(_browser, make_site(tmp_path))
+        box = pg.locator(".hover-tooltip-popup-box").first.bounding_box()
+        pt = {"x": box["x"] + box["width"] / 2, "y": box["y"] + min(box["height"] / 2, 200)}
+        stayed = pg.evaluate(
+            """(pt) => {
+                const box = document.querySelector('.hover-tooltip-popup-box');
+                const sel = '.hover-tooltip-popup-box [data-zoom]';
+                const mk = (type, opts) => new MouseEvent(type, Object.assign(
+                    {clientX: pt.x, clientY: pt.y, bubbles: true, cancelable: true}, opts));
+                box.dispatchEvent(mk('mousedown', {button: 2, buttons: 2}));
+                // Missed mouseup: subsequent moves report no button held (buttons: 0).
+                window.dispatchEvent(mk('mousemove', {buttons: 0, clientX: pt.x + 40, clientY: pt.y + 40}));
+                const a1 = getComputedStyle(document.querySelector(sel)).transform;
+                window.dispatchEvent(mk('mousemove', {buttons: 0, clientX: pt.x + 120, clientY: pt.y + 120}));
+                const a2 = getComputedStyle(document.querySelector(sel)).transform;
+                return a1 === a2;  // no further panning after the button was released
+            }""",
+            pt,
+        )
+        assert stayed is True
         assert pg.page_errors == []
         context.close()
 

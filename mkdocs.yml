@@ -117,6 +117,11 @@ extra_css:
   - css/mermaid.css
   # Global dark/light aware diagram color tokens & styling
   - css/hide-root-section.css
+  # Semantic classDef colors + the C4 in-node label tiers (.c4-name/.c4-type/.c4-detail).
+  # This is the plugin's OWN opt-in copy, vendored in the package and copied to
+  # assets/stylesheets/ by on_post_build — we dogfood it instead of keeping a docs/ copy.
+  # Demonstrated in Mermaid/custom-fonts.md (rationale also in AGENTS.md).
+  - assets/stylesheets/hover-tooltip-popup-diagram-colors.css
 
 extra_javascript:
   # Bundle Mermaid offline so the docs never fetch it from a CDN. Material for MkDocs
@@ -125,7 +130,9 @@ extra_javascript:
   # means Material renders diagrams with our local copy. Pinned >= 11.15.0.
   # Download newer versions at https://unpkg.com/browse/mermaid@11.15.0/dist/
   - extra/js/mermaid-11.15.0.min.js
-  - extra/js/mermaid-init.js
+  # The plugin's OWN opt-in Mermaid initializer, vendored in the package and copied to
+  # assets/javascripts/ by on_post_build. Must load right after the Mermaid bundle.
+  - assets/javascripts/hover-tooltip-popup-mermaid-init.js
   - extra/js/refresh-on-toggle-dark-light.js
 
 extra:

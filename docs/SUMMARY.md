@@ -10,6 +10,8 @@
     * [Smart Auto-Detection](Mermaid/disabled.md)
     * [Large Mermaid Diagram](Mermaid/bigmermaid.md)
     * [Clickable Elements](Mermaid/clickables.md)
+    * [Custom Fonts Inside Nodes](Mermaid/custom-fonts.md)
+    * [Native Mermaid C4 (comparison)](Mermaid/c4-native.md)
     * [Excluded Diagrams](Mermaid/excluded.md)
     * [Linked Diagrams](Mermaid/links.md)
 * [D2 Diagrams](D2/index.md)

@@ -222,12 +222,16 @@ def create_box(soup: BeautifulSoup, config: dict[str, Any], id: int | str) -> Ta
     """Create the main panzoom container box with all controls."""
     always_hint = config.get("always_show_hint", False)
 
+    # Note: context-menu suppression for right-drag panning is handled at runtime in
+    # hover-tooltip-popup.js (canvas mode only), which suppresses a plain right-click but
+    # lets Shift+right-click through to the browser's native menu. We deliberately do NOT
+    # set an inline `oncontextmenu="return false"` here, since that would unconditionally
+    # block the menu (even Shift+right-click) and applies regardless of navigation mode.
     box = soup.new_tag(
         "div",
         attrs={
             "class": "hover-tooltip-popup-box",
             "id": "hover-tooltip-popup" + str(id),
-            "oncontextmenu": "return false;",
         },
     )
 

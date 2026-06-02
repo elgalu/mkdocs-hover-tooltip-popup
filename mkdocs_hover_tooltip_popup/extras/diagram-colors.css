@@ -1,0 +1,149 @@
+/* Global diagram (Mermaid) palette supporting light & dark.
+   Use classDef tokens like: startNode, stepNode, successNode, accentNode, branchMain, branchFeature
+   Example: class A startNode; class E successNode;
+
+   Design: modeled on the C4 element look — a light fill, a darker same-hue border, and dark
+   label text. LIGHT mode is genuinely light (every node is a soft pastel, no dark cells); the
+   palette is blue-dominant like the canonical C4 colors, with green reserved for data stores and
+   amber for a transient/cache node so the kinds stay distinguishable. Each token defines -bg
+   (fill), -bd (border / stroke), and a per-token text color.
+
+   IMPORTANT — theme switch: the dark overrides key off `body[data-md-color-scheme="slate"]`, the
+   attribute Material for MkDocs sets (both on the palette toggle AND on its prefers-color-scheme
+   auto-select). The older `@media (prefers-color-scheme: dark)` did NOT fire on the toggle, so the
+   dark palette never engaged and light values showed in both modes. */
+:root {
+  --diag-bg-start: #e3eaf2;      /* external source — light steel (C4 "external" gray-blue) */
+  --diag-bd-start: #9fb3c8;
+  --diag-bg-step: #eef3fb;       /* input / transform step — very light blue */
+  --diag-bd-step: #c3d2e6;
+  --diag-bg-success: #dcecdc;    /* data store / sink — soft green */
+  --diag-bd-success: #a3c9a3;
+  --diag-bg-accent: #c4dbf6;     /* the compute (job / container) — C4 container light blue */
+  --diag-bd-accent: #6fa8dc;
+  --diag-bg-feature: #fceccf;    /* transient / cache — soft amber */
+  --diag-bd-feature: #e6b566;
+  --diag-bg-branch-main: #e6e9ed;
+  --diag-bd-branch-main: #aab3bd;
+  --diag-bg-branch-feature: #dfe9f6;
+  --diag-bd-branch-feature: #8fb6e0;
+  --diag-fg-start: #14202b;
+  --diag-fg-step: #14202b;
+  --diag-fg-success: #15301a;
+  --diag-fg-accent: #0b2545;
+  --diag-fg-feature: #4a3208;
+  --diag-fg-branch-main: #14202b;
+  --diag-fg-branch-feature: #0b2545;
+  --diag-border-radius: 4px;
+}
+
+body[data-md-color-scheme="slate"] {
+  /* Dark mode: deeper saturated fills on the dark page, light text. */
+  --diag-bg-start: #34495e;
+  --diag-bd-start: #5a7894;
+  --diag-bg-step: #3a4458;
+  --diag-bd-step: #5b6a87;
+  --diag-bg-success: #2f4a32;
+  --diag-bd-success: #4a734f;
+  --diag-bg-accent: #1f5fa8;
+  --diag-bd-accent: #4f8fd0;
+  --diag-bg-feature: #6e5320;
+  --diag-bd-feature: #a07c34;
+  --diag-bg-branch-main: #4a525c;
+  --diag-bd-branch-main: #6e7785;
+  --diag-bg-branch-feature: #2a4a73;
+  --diag-bd-branch-feature: #4f7cb0;
+  --diag-fg-start: #ffffff;
+  --diag-fg-step: #ffffff;
+  --diag-fg-success: #ffffff;
+  --diag-fg-accent: #ffffff;
+  --diag-fg-feature: #ffffff;
+  --diag-fg-branch-main: #ffffff;
+  --diag-fg-branch-feature: #ffffff;
+}
+
+/* Mermaid allows selecting nodes by class name, we map our semantic tokens.
+   Use the DESCENDANT combinator (` *`), not the child combinator (`> *`): Mermaid nests the
+   label text as `<g.label><foreignObject><div><span class="nodeLabel">…`, and `.nodeLabel`
+   carries its own dark `color:#333`. A child-only rule colors the wrapper but not that nested
+   span, so any styled in-node text (e.g. the C4 `.c4-*` tiers) inherits #333 and renders
+   dark-on-dark — unreadable on the colored node fills in LIGHT mode. Coloring every descendant
+   pushes the intended per-node text color down to `.nodeLabel` and the tier spans.
+   `fill` = node body, `stroke` = the C4-style border (a darker same-hue tone). */
+.mermaid .startNode * { fill: var(--diag-bg-start) !important; stroke: var(--diag-bd-start) !important; color: var(--diag-fg-start) !important; }
+.mermaid .stepNode * { fill: var(--diag-bg-step) !important; stroke: var(--diag-bd-step) !important; color: var(--diag-fg-step) !important; }
+.mermaid .successNode * { fill: var(--diag-bg-success) !important; stroke: var(--diag-bd-success) !important; color: var(--diag-fg-success) !important; }
+.mermaid .accentNode * { fill: var(--diag-bg-accent) !important; stroke: var(--diag-bd-accent) !important; color: var(--diag-fg-accent) !important; }
+.mermaid .featureNode * { fill: var(--diag-bg-feature) !important; stroke: var(--diag-bd-feature) !important; color: var(--diag-fg-feature) !important; }
+.mermaid .branchMain * { fill: var(--diag-bg-branch-main) !important; stroke: var(--diag-bd-branch-main) !important; color: var(--diag-fg-branch-main) !important; }
+.mermaid .branchFeature * { fill: var(--diag-bg-branch-feature) !important; stroke: var(--diag-bd-branch-feature) !important; color: var(--diag-fg-branch-feature) !important; }
+
+/* The descendant rules above also hit the HTML label text. `color` is wanted there; the
+   inherited `stroke` (the node BORDER color, now different from the fill) must not paint a
+   hairline outline around the glyphs. Neutralize stroke on the label text — borders live on
+   rect/path/polygon. */
+.mermaid foreignObject span,
+.mermaid foreignObject p,
+.mermaid .nodeLabel,
+.mermaid .c4-name,
+.mermaid .c4-type,
+.mermaid .c4-detail { stroke: none !important; }
+
+/* Edge labels (the text on each arrow). Mermaid's stock dark theme renders these as
+   low-contrast light-gray (#ccc) on a medium-gray (#585858) pill — hard to read in dark mode.
+   Light mode is fine (dark text on a light pill), so only override dark: brighter near-white
+   text on a darker pill restores comfortable contrast. */
+body[data-md-color-scheme="slate"] .mermaid .edgeLabel,
+body[data-md-color-scheme="slate"] .mermaid .edgeLabel p,
+body[data-md-color-scheme="slate"] .mermaid .edgeLabel span,
+body[data-md-color-scheme="slate"] .mermaid .edgeLabel .edgeLabel {
+  color: #f2f4f8 !important;
+  fill: #f2f4f8 !important;
+}
+body[data-md-color-scheme="slate"] .mermaid .edgeLabel,
+body[data-md-color-scheme="slate"] .mermaid .edgeLabel p,
+body[data-md-color-scheme="slate"] .mermaid .edgeLabel span {
+  background-color: #2b2f36 !important;
+}
+
+/* Generic rounded corners */
+.mermaid rect, .mermaid polygon, .mermaid path { rx: var(--diag-border-radius); ry: var(--diag-border-radius); }
+
+/* ---------------------------------------------------------------------------
+   C4-style in-node label hierarchy. Wrap each line of a Mermaid node label in a
+   `.c4-name` / `.c4-type` / `.c4-detail` span (see docs/Mermaid/custom-fonts.md and
+   the "Custom fonts / styled HTML inside Mermaid nodes" section of AGENTS.md):
+     .c4-name   — Line 1: identity. Bold, largest.
+     .c4-type   — Line 2: the [stereotype]. Smallest, italic, muted.
+     .c4-detail — Line 3+: description. Between the two.
+   Selectors are intentionally NOT scoped under `.mermaid`: Mermaid measures each
+   htmlLabel in a node detached from the diagram to size the box, and a scoped rule
+   would not match there, so the box would be sized for default text and clip the
+   tiers. `.c4-name` is `nowrap` so a long name grows the box width (measured
+   correctly) instead of wrapping to a line the height calc misses. Requires
+   htmlLabels (on by default for flowcharts) — see docs/Mermaid/custom-fonts.md. */
+.c4-name {
+  display: block;
+  font-weight: 700;
+  font-size: 17px !important;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.c4-type {
+  display: block;
+  font-weight: 500;
+  font-size: 12px !important;
+  font-style: italic;
+  opacity: 0.88;
+  letter-spacing: 0.03em;
+}
+.c4-detail {
+  display: block;
+  font-weight: 550;
+  font-size: 14px !important;
+  opacity: 0.92;
+  /* nowrap like .c4-name: detail tiers are short labels, never prose. A wrapped detail makes
+     Mermaid under-measure the box height and clip it (worst on narrow cylinder/store shapes);
+     nowrap grows the box width to fit instead, which Mermaid measures correctly. */
+  white-space: nowrap;
+}

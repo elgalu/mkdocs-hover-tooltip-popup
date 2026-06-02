@@ -213,6 +213,18 @@ class HoverTooltipPopupPlugin(BasePlugin):
                 os.path.join(js_path, "panzoom.min.js"),
             )
 
+            # Optional, opt-in example assets (NOT auto-loaded). Copied so consumers can
+            # activate them via extra_css / extra_javascript if they want the C4-style
+            # diagram palette + Mermaid HTML-label rendering. See README "Styled diagrams".
+            utils.copy_file(
+                os.path.join(base_path, "extras", "diagram-colors.css"),
+                os.path.join(css_path, "hover-tooltip-popup-diagram-colors.css"),
+            )
+            utils.copy_file(
+                os.path.join(base_path, "extras", "mermaid-init.js"),
+                os.path.join(js_path, "hover-tooltip-popup-mermaid-init.js"),
+            )
+
             logger.debug("Successfully copied plugin assets")
 
         except Exception as e:

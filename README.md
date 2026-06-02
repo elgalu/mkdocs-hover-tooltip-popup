@@ -34,6 +34,13 @@ plugins:
 >site_url: https://elgalu.github.io/mkdocs-hover-tooltip-popup/
 >```
 
+If you use the Material for MkDocs theme, one feature is worth avoiding:
+
+> [!NOTE]
+> Avoid enabling the Material for MkDocs `navigation.instant` feature with this plugin.
+> Instant navigation swaps page content without a full reload, which can leave Mermaid
+> diagrams unrendered (and is a known rough edge for client-side Mermaid in general).
+
 ## Usage
 
 Examples and usage are available in the [docs](https://elgalu.github.io/mkdocs-hover-tooltip-popup/).
@@ -168,6 +175,39 @@ The plugin automatically saves the zoom level and pan position for each diagram 
 
 This feature works automatically - no additional configuration is required. The zoom states are stored locally in your browser
 and are not shared between different browsers or devices.
+
+## Styled diagrams (optional)
+
+The plugin ships two optional, **opt-in** assets for sites that want richly styled Mermaid diagrams
+(a C4-model look: bold name, italic stereotype, muted detail, with light/dark support). They are
+**not** loaded automatically — the plugin stays focused on pan/zoom + tooltips and never touches your
+Mermaid rendering or theme unless you ask it to. On build they are copied to your site under
+`assets/`, so you activate them by listing those paths:
+
+```yaml
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          # Raw <div class="mermaid"> (source not HTML-escaped) — the supported fence.
+          format: !!python/name:mermaid2.fence_mermaid
+
+extra_css:
+  - assets/stylesheets/hover-tooltip-popup-diagram-colors.css   # C4 tier styling + palette
+
+extra_javascript:
+  - extra/js/mermaid-11.15.0.min.js                             # your bundled Mermaid runtime
+  - assets/javascripts/hover-tooltip-popup-mermaid-init.js      # renders it with HTML labels
+```
+
+Then author node labels with the `.c4-name` / `.c4-type` / `.c4-detail` spans. See the
+[Custom Fonts example](https://elgalu.github.io/mkdocs-hover-tooltip-popup/Mermaid/custom-fonts/)
+for the full recipe.
+
+> [!NOTE]
+> Only the `mermaid2.fence_mermaid` superfence is supported. The HTML-escaping
+> `pymdownx.superfences.fence_code_format` is not (it would require heavy DOM surgery to render).
 
 ## Star History
 

@@ -97,6 +97,44 @@ button; info button is added unless `always_show_hint`; zoom-in/out buttons adde
 `show_zoom_buttons`; fullscreen min/max buttons added when `full_screen`. The hint info box
 is appended at the top or bottom of the hover-tooltip-popup-box depending on `hint_location`.
 
+Custom fonts / styled HTML inside Mermaid nodes (the C4-tier look, demoed in
+`docs/Mermaid/custom-fonts.md`): Mermaid renders flowchart node labels as real HTML inside an
+SVG `<foreignObject>` when `htmlLabels` is on (its default for flowcharts), so a label can carry
+`<span class='c4-name'>…</span><span class='c4-type'>[Kind]</span><span class='c4-detail'>…</span>`
+plus inline `<a href>` links. Three authoring rules: concatenate the tier spans with NO `<br/>`
+between them (they are `display: block`, so a `<br/>` adds a second empty line and the node looks
+double-spaced — keep `<br/>` only for a break *inside* one tier); single-quote the HTML attributes
+(a double quote closes Mermaid's `["…"]` label early → `Syntax error in text`); and escape a literal
+`&` as `&amp;`.
+
+The tier styles live in `docs/css/diagram-colors.css` (listed in `extra_css`). Two non-obvious CSS
+rules, both about how Mermaid sizes the node box:
+
+- The `.c4-name` / `.c4-type` / `.c4-detail` selectors are deliberately NOT scoped under `.mermaid`.
+  Mermaid measures each HTML label in a probe element detached from the rendered `.mermaid`
+  container, so a `.mermaid .c4-name` rule would not match during measurement and the box would be
+  sized for default 16px text, then clip the real tiers. Bare class selectors apply during the
+  probe too. These class names only appear inside diagrams, so the un-scoped selector is safe.
+- `.c4-name` uses `white-space: nowrap`: Mermaid measures the name as one line, so a name that wraps
+  produces a box one line too short that clips the bottom tier. `nowrap` grows the box width instead.
+
+`font-size` on the tiers uses `!important` to beat Mermaid's own `.nodeLabel` size (which would
+otherwise flatten all tiers to one size). Note that `!important` makes these sizes harder to
+override downstream; that is intended here since the whole point is to win over Mermaid's defaults.
+
+Because the demo uses the `mermaid2.fence_mermaid` fence (raw `<div class="mermaid">`, source not
+escaped) and `docs/css/diagram-colors.css` is a real page stylesheet, the tiers size correctly with
+no extra runtime config — our shipped `hover-tooltip-popup.js`/`mermaid-init.js` only set
+`securityLevel: "loose"` and rely on Mermaid's default `htmlLabels`. A project forced onto
+`pymdownx.superfences.fence_code_format` (which HTML-escapes the source into `<pre class="mermaid">
+<code>`) needs a heavier init that: captures each diagram's source synchronously at script-eval time,
+swaps the `<pre>` for a `<div>` (pan/zoom only attaches to a `<div>`/`<img>`), and renders via
+`mermaid.render(id, source)` with `htmlLabels: true` and the tier CSS repeated as `themeCSS` (the
+page stylesheet does not apply inside Mermaid's off-DOM measurement probe). The "auto-run empties the
+element before you can read it" hazard that motivates the synchronous capture is specific to this
+vendored UMD bundle's auto-run interacting with the `<pre><code>` shape, not general Mermaid
+behavior. We ship `fence_mermaid` precisely to avoid all of that.
+
 ## Development Commands
 
 `make` with no target prints a self-documenting help menu (no side effects). Run
