@@ -58,7 +58,9 @@ class TestInfoBox:
         assert info_box.name == "div"
         assert "hover-tooltip-popup-info-box" in info_box.get("class")
         assert "hover-tooltip-popup-hidden" in info_box.get("class")
-        assert 'Press "Alt"' in info_box.string
+        # Default (canvas) mode fallback hint mentions how to move and zoom.
+        assert "move" in info_box.string
+        assert "zoom" in info_box.string
 
     def test_create_info_box_top(self, soup, basic_config):
         """Test creating info box at top."""
@@ -78,36 +80,35 @@ class TestInfoBox:
 
         assert "hover-tooltip-popup-hidden" not in info_box.get("class")
 
-    def test_create_info_box_different_keys(self, soup, basic_config):
-        """Test info box with different key configurations."""
-        keys_and_messages = [
-            ("ctrl", 'Press "Ctrl"'),
-            ("shift", 'Press "Shift"'),
-            # With no modifier, the hint must not tell the user to press one.
-            ("none", "Pan & Zoom is always active"),
-        ]
-
-        for key, expected_text in keys_and_messages:
-            config = basic_config.copy()
-            config["key"] = key
-
-            info_box = create_info_box(soup, config)
-            assert expected_text in info_box.string
-
-    def test_create_info_box_none_key_has_no_disable_instruction(self, soup, basic_config):
-        """The key=none hint must not mention disabling or pressing a modifier."""
+    def test_create_info_box_classic_modifier_hint(self, soup, basic_config):
+        """In classic mode with a modifier key, the fallback hint names the modifier."""
         config = basic_config.copy()
+        config["navigation"] = "classic"
+        config["key"] = "ctrl"
+
+        info_box = create_info_box(soup, config)
+        assert "modifier key" in info_box.string
+        assert "move" in info_box.string
+        assert "zoom" in info_box.string
+
+    def test_create_info_box_classic_none_key(self, soup, basic_config):
+        """Classic + key=none: hint says drag-to-move with no modifier mentioned."""
+        config = basic_config.copy()
+        config["navigation"] = "classic"
         config["key"] = "none"
-        info_box = create_info_box(soup, config)
-        assert "modifier" not in info_box.string
-        assert "disable" not in info_box.string
 
-    def test_create_info_box_unknown_key_falls_back(self, soup, basic_config):
-        """An unrecognized key yields the generic 'press a modifier key' hint."""
-        config = basic_config.copy()
-        config["key"] = "hyperkey"
         info_box = create_info_box(soup, config)
-        assert "Press a modifier key" in info_box.string
+        assert "Drag to move" in info_box.string
+        assert "modifier" not in info_box.string
+
+    def test_create_info_box_canvas_mode_hint(self, soup, basic_config):
+        """Canvas mode (default) fallback hint covers move + zoom, no modifier-only framing."""
+        config = basic_config.copy()
+        config["navigation"] = "canvas"
+
+        info_box = create_info_box(soup, config)
+        assert "right-drag" in info_box.string
+        assert "zoom" in info_box.string
 
 
 class TestButtons:

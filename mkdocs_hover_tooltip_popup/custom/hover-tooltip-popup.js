@@ -226,7 +226,7 @@ function setupCanvasNavigation(elem, box, instance, zoomStep) {
   // The configured zoom_step scales the curve (default 0.2 == 1x).
   const WHEEL_PX_PER_NOTCH = 120; // a typical mouse wheel notch in pixel mode
   const WHEEL_MAX_STEP = 0.12; // largest zoom fraction per wheel event
-  const WHEEL_MIN_STEP = 0.025; // smallest zoom fraction per wheel event
+  const WHEEL_MIN_STEP = 0.012; // smallest zoom fraction per wheel event (tames macOS pinch)
   const WHEEL_LINE_PX = 16; // approx px per line for deltaMode === 1
 
   function wheelScaleMultiplier(e) {
@@ -299,6 +299,51 @@ function setupCanvasNavigation(elem, box, instance, zoomStep) {
   box.addEventListener("contextmenu", function (e) {
     e.preventDefault();
   });
+}
+
+// Best-effort macOS detection so the hint can name the right keys/gestures.
+function isMacOS() {
+  const platform =
+    (navigator.userAgentData && navigator.userAgentData.platform) ||
+    navigator.platform ||
+    navigator.userAgent ||
+    "";
+  return /mac|iphone|ipad|ipod/i.test(platform);
+}
+
+// Set the per-box hint text at runtime. Done here (not at build time) because the
+// useful wording depends on the OS (Cmd vs Ctrl, trackpad vs wheel) and the active
+// navigation mode, neither of which is known when the static HTML is generated.
+function setHintText(box, navigation, key) {
+  const hint = box.querySelector(
+    ".hover-tooltip-popup-info-box, .hover-tooltip-popup-info-box-top",
+  );
+  if (!hint) {
+    return;
+  }
+  const mac = isMacOS();
+  let text;
+  if (navigation === "canvas") {
+    const zoomKey = mac ? "⌘" : "Ctrl";
+    // In canvas mode left click is free (select nodes / click links); spell out the
+    // non-obvious ways to MOVE the diagram, plus how to zoom.
+    const moveGesture = mac ? "Two-finger drag or right-drag" : "Scroll or right-drag";
+    const zoomGesture = mac ? `pinch or ${zoomKey}+scroll` : `${zoomKey}+scroll`;
+    text = `${moveGesture} to move • ${zoomGesture} to zoom`;
+  } else {
+    const keyLabels = {
+      alt: mac ? "⌥ Option" : "Alt",
+      ctrl: mac ? "⌃ Control" : "Ctrl",
+      shift: "Shift",
+    };
+    if (key === "none") {
+      text = "Drag to move the diagram • scroll to zoom";
+    } else {
+      const label = keyLabels[key] || "the modifier key";
+      text = `Hold ${label} and drag to move • ${label}+scroll to zoom`;
+    }
+  }
+  hint.textContent = text;
 }
 
 function activate_zoom_pan() {
@@ -446,6 +491,7 @@ function activate_zoom_pan() {
       });
 
       add_buttons(box, instance, zoomStep);
+      setHintText(box, navigation, key);
     }
   });
 

@@ -117,6 +117,17 @@ class TestHint:
         page.wait_for_timeout(120)
         assert hint.evaluate("e => e.classList.contains('hover-tooltip-popup-hidden')") is True
 
+    def test_canvas_hint_text_set_at_runtime(self, page):
+        """In canvas mode the runtime rewrites the hint to explain move + zoom gestures."""
+        hint = page.locator(
+            ".hover-tooltip-popup-box .hover-tooltip-popup-info-box, "
+            ".hover-tooltip-popup-box .hover-tooltip-popup-info-box-top"
+        ).first
+        text = hint.text_content()
+        assert "move" in text
+        assert "zoom" in text
+        assert "right-drag" in text
+
 
 class TestPersistence:
     """Zoom state is saved to localStorage and cleared on reset."""

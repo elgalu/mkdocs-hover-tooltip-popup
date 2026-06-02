@@ -22,19 +22,19 @@ def create_info_box(soup: BeautifulSoup, config: dict[str, Any]) -> Tag:
     else:
         info_box = soup.new_tag("div", attrs={"class": css_class + " hover-tooltip-popup-hidden"})
 
-    action_text = " to disable Pan & Zoom (for text selection)"
-    key_messages = {
-        "alt": f'Press "Alt" / "Option"{action_text}',
-        "ctrl": f'Press "Ctrl"{action_text}',
-        "shift": f'Press "Shift"{action_text}',
-        # With no modifier key, pan/zoom is always active and cannot be toggled off,
-        # so the "press X to disable" framing does not apply.
-        "none": "Pan & Zoom is always active",
-    }
-
-    # Ensure key is a string for the get() call
-    key_str = str(key) if key is not None else "alt"
-    info_box.string = key_messages.get(key_str, f"Press a modifier key{action_text}")
+    # The hint text is finalized at runtime by hover-tooltip-popup.js::setHintText,
+    # which tailors it to the OS (Cmd vs Ctrl, trackpad vs wheel) and the active
+    # navigation mode. This build-time string is only a fallback shown if the runtime
+    # has not (yet) replaced it. Keep it generic and mode-agnostic.
+    navigation = config.get("navigation", "canvas")
+    if navigation == "classic":
+        key_str = str(key) if key is not None else "alt"
+        if key_str == "none":
+            info_box.string = "Drag to move the diagram, scroll to zoom"
+        else:
+            info_box.string = "Hold the modifier key to move and zoom the diagram"
+    else:
+        info_box.string = "Drag, scroll, or right-drag to move; pinch or Ctrl+scroll to zoom"
 
     return info_box
 
