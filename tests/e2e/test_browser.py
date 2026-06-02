@@ -365,8 +365,8 @@ class TestTooltipHover:
         context.close()
 
 
-class TestMiroNavigation:
-    """Miro-style navigation (the default): wheel pans, ctrl-wheel zooms, right-drag pans."""
+class TestCanvasNavigation:
+    """Canvas-style navigation (the default): wheel pans, ctrl-wheel zooms, right-drag pans."""
 
     @staticmethod
     def _open(browser, url):
@@ -434,7 +434,7 @@ class TestMiroNavigation:
         context.close()
 
     def test_classic_mode_right_drag_does_not_pan(self, _browser, tmp_path):
-        """In classic mode the Miro layer is absent, so right-drag does not pan.
+        """In classic mode the canvas layer is absent, so right-drag does not pan.
 
         (The library only pans on left/middle drag, and never on right-button drag.)
         """
@@ -453,4 +453,46 @@ class TestMiroNavigation:
             "",
             "matrix(1, 0, 0, 1, 0, 0)",
         )
+        context.close()
+
+    @staticmethod
+    def _wheel(pg, ctrl=False, alt=False):
+        box = pg.locator(".hover-tooltip-popup-box").first.bounding_box()
+        pg.evaluate(
+            """(a) => document.querySelector('.hover-tooltip-popup-box').dispatchEvent(
+                new WheelEvent('wheel', {deltaY: -120, ctrlKey: a.ctrl, altKey: a.alt,
+                    clientX: a.x, clientY: a.y, bubbles: true, cancelable: true}))""",
+            {
+                "ctrl": ctrl,
+                "alt": alt,
+                "x": box["x"] + box["width"] / 2,
+                "y": box["y"] + box["height"] / 2,
+            },
+        )
+        pg.wait_for_timeout(200)
+
+    def test_classic_key_none_wheel_zooms(self, _browser, tmp_path):
+        """Classic + key 'none': a plain wheel zooms (the modifier gate is off)."""
+        context, pg = self._open(_browser, make_site(tmp_path, navigation="classic", key="none"))
+        sel = ".hover-tooltip-popup-box [data-zoom]"
+        assert _scale_of(pg, sel) == 1.0
+        self._wheel(pg)
+        assert _scale_of(pg, sel) > 1.0
+        context.close()
+
+    def test_classic_key_alt_requires_modifier(self, _browser, tmp_path):
+        """Classic + key 'alt': plain wheel does nothing; alt+wheel zooms.
+
+        Regression: the old gate was inverted (modifier vetoed instead of enabling),
+        so a plain wheel zoomed and alt+wheel did not.
+        """
+        context, pg = self._open(_browser, make_site(tmp_path, navigation="classic", key="alt"))
+        sel = ".hover-tooltip-popup-box [data-zoom]"
+        assert _scale_of(pg, sel) == 1.0
+        # Plain wheel: the 'alt' modifier is not held, so nothing happens.
+        self._wheel(pg)
+        assert _scale_of(pg, sel) == 1.0
+        # alt+wheel: the modifier is held, so it zooms.
+        self._wheel(pg, alt=True)
+        assert _scale_of(pg, sel) > 1.0
         context.close()

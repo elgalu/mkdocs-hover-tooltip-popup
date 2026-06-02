@@ -51,7 +51,8 @@ Per-diagram opt-out and auto-detection (`yaml_parser.py`, called from
 
 - For `<pre class="mermaid">` elements, the inner `<code>` text is parsed for a YAML
   frontmatter block (`---` ... `---`).
-- If the frontmatter has `panzoom: { enabled: false }`, panzoom is skipped for that diagram.
+- If the frontmatter has `hover-tooltip-popup: { enabled: false }`, panzoom is skipped for that
+  diagram (the opt-out key is `yaml_parser.OPT_OUT_KEY`).
 - Otherwise, when `auto_enable: true` (default), `should_enable_panzoom()` enables panzoom
   only for diagrams that exceed any of the size thresholds (`auto_enable_threshold_lines`,
   `_nodes`, `_edges`, `_chars`). When `auto_enable: false`, all matched diagrams get panzoom
@@ -89,7 +90,7 @@ Runtime assets:
 - `mkdocs_hover_tooltip_popup/panzoom/panzoom.min.js`: pan/zoom engine, originally vendored
   from [anvaka/panzoom](https://github.com/anvaka/panzoom) (MIT). We now maintain it as a
   forked copy and edit it directly when the upstream API can't express what we need (e.g.
-  Miro-style navigation). Keep the anvaka MIT `LICENCE` alongside it.
+  canvas-style navigation). Keep the anvaka MIT `LICENCE` alongside it.
 
 Box structure (`box.py::create_box`): the `nav` always contains a reset
 button; info button is added unless `always_show_hint`; zoom-in/out buttons added when
@@ -169,7 +170,7 @@ Plugin options (defined in `plugin.py::HoverTooltipPopupPlugin.config_scheme`, d
 - UI: `always_show_hint` (`false`), `hint_location` (`"bottom"` or `"top"`),
   `show_zoom_buttons` (`false`), `buttons_size` (`"1.25em"`), `full_screen` (`false`).
 - Zoom: `initial_zoom_level` (`1.0`), `zoom_step` (`0.2`).
-- Navigation: `navigation` (`"miro"` default, or `"classic"`). In `miro` mode, the wheel /
+- Navigation: `navigation` (`"canvas"` default, or `"classic"`). In `canvas` mode, the wheel /
   trackpad two-finger drag pans, `ctrl`/`cmd`+wheel and trackpad pinch zoom, and right-mouse
   drag pans (left click stays free for nodes/tooltips). In `classic` mode, the `key` modifier
   (`"alt"` default, also `ctrl` / `shift` / `none`) gates the library's left-drag pan + wheel
@@ -208,7 +209,7 @@ by default.
 
 ## Code Style
 
-- Python 3.10+; line length 99 (per `pyproject.toml`, narrower than the global 130).
+- Python 3.11+ (tested on 3.11–3.14); line length 99 (per `pyproject.toml`, narrower than the global 130).
 - `ruff` for linting + formatting; `mypy` is configured but with relaxed settings (most
   strict checks off; `tests/.*` is excluded).
 - Pre-commit hook config is in `.pre-commit-config.yaml`.

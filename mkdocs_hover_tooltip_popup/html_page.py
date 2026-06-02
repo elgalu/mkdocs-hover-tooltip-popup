@@ -105,7 +105,7 @@ class HTMLPage:
                     "initial_zoom_level": self.config.get("initial_zoom_level", 1.0),
                     "zoom_step": self.config.get("zoom_step", 0.2),
                     "buttons_size": self.config.get("buttons_size", "1.25em"),
-                    "navigation": self.config.get("navigation", "miro"),
+                    "navigation": self.config.get("navigation", "canvas"),
                 }
             )
             theme_tag = self.soup.new_tag("meta")

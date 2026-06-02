@@ -42,42 +42,42 @@ graph TD
     def test_panzoom_disabled(self):
         """Test YAML metadata with panzoom disabled."""
         content = """---
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart LR
     A --> B"""
 
         result = parse_mermaid_yaml_metadata(content)
-        assert result == {"panzoom": {"enabled": False}}
+        assert result == {"hover-tooltip-popup": {"enabled": False}}
 
     def test_panzoom_enabled(self):
         """Test YAML metadata with panzoom explicitly enabled."""
         content = """---
-panzoom: { enabled: true }
+hover-tooltip-popup: { enabled: true }
 ---
 flowchart LR
     A --> B"""
 
         result = parse_mermaid_yaml_metadata(content)
-        assert result == {"panzoom": {"enabled": True}}
+        assert result == {"hover-tooltip-popup": {"enabled": True}}
 
     def test_multiple_fields(self):
         """Test YAML metadata with multiple fields including panzoom."""
         content = """---
 title: Complex Diagram
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 graph TB
     A --> B --> C"""
 
         result = parse_mermaid_yaml_metadata(content)
-        assert result == {"title": "Complex Diagram", "panzoom": {"enabled": False}}
+        assert result == {"title": "Complex Diagram", "hover-tooltip-popup": {"enabled": False}}
 
     def test_malformed_yaml(self):
         """Test handling of malformed YAML content."""
         content = """---
 title: My Diagram
-panzoom: { enabled: invalid }
+hover-tooltip-popup: { enabled: invalid }
 invalid line without colon
 ---
 graph TD
@@ -113,13 +113,13 @@ graph TD
         """Test YAML metadata with various whitespace scenarios."""
         content = """---
   title:   Spaced Title
-  panzoom:  { enabled: false }
+  hover-tooltip-popup:  { enabled: false }
 ---
 graph TD
     A --> B"""
 
         result = parse_mermaid_yaml_metadata(content)
-        assert result == {"title": "Spaced Title", "panzoom": {"enabled": False}}
+        assert result == {"title": "Spaced Title", "hover-tooltip-popup": {"enabled": False}}
 
 
 class TestShouldEnablePanzoom:
@@ -149,7 +149,7 @@ class TestShouldEnablePanzoom:
     def test_panzoom_disabled_via_metadata(self):
         """Test that panzoom can be disabled via YAML metadata."""
         content = """---
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart LR
     A --> B"""
@@ -160,7 +160,7 @@ flowchart LR
     def test_panzoom_explicitly_enabled_via_metadata(self):
         """Test that panzoom can be explicitly enabled via YAML metadata."""
         content = """---
-panzoom: { enabled: true }
+hover-tooltip-popup: { enabled: true }
 ---
 flowchart LR
     A --> B"""
@@ -184,7 +184,7 @@ graph TB
     def test_invalid_panzoom_config_uses_auto_detection(self):
         """Test that invalid panzoom config falls back to auto-detection."""
         content = """---
-panzoom: invalid_value
+hover-tooltip-popup: invalid_value
 ---
 graph TB
     A --> B"""
@@ -195,7 +195,7 @@ graph TB
     def test_empty_panzoom_config_uses_auto_detection(self):
         """Test that empty panzoom config falls back to auto-detection."""
         content = """---
-panzoom: {}
+hover-tooltip-popup: {}
 ---
 flowchart LR
     A --> B"""
@@ -207,7 +207,7 @@ flowchart LR
         """Test combination of title and disabled panzoom."""
         content = """---
 title: Mint (Scaled)
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 graph TB
     Client --> DNS"""
@@ -229,7 +229,7 @@ graph TB
 
         for bool_str, expected in test_cases:
             content = f"""---
-panzoom: {{ enabled: {bool_str} }}
+hover-tooltip-popup: {{ enabled: {bool_str} }}
 ---
 graph TD
     A --> B"""
@@ -300,7 +300,7 @@ class TestDiagramComplexityAnalysis:
 
         content_with_yaml = """---
 title: My Diagram
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart TD
     A --> B
@@ -388,7 +388,7 @@ flowchart TD
         """Test that explicit YAML settings override auto-detection."""
         # Small diagram with explicit enable
         small_with_explicit_enable = """---
-panzoom: { enabled: true }
+hover-tooltip-popup: { enabled: true }
 ---
 flowchart LR
     A --> B"""
@@ -398,7 +398,7 @@ flowchart LR
 
         # Large diagram with explicit disable
         large_with_explicit_disable = """---
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart TD
     A[Start Process] --> B{Decision Point}

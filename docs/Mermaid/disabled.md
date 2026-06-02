@@ -46,7 +46,7 @@ You can explicitly disable panzoom even for large diagrams:
 
 ```mermaid
 ---
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart LR
     A([Start]) --> B([aws-cli]) --> C([GitHub SSH]) --> D([SSH Keys Added]) --> E([Ready to Connect])
@@ -60,7 +60,7 @@ You can explicitly enable panzoom even for small diagrams:
 
 ```mermaid
 ---
-panzoom: { enabled: true }
+hover-tooltip-popup: { enabled: true }
 ---
 flowchart LR
     A --> B --> C

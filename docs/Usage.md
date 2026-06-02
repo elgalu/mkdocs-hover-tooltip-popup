@@ -16,7 +16,7 @@ graph TD
 
 ## Mouse and trackpad
 
-By default the plugin uses Miro-style navigation:
+By default the plugin uses canvas-style navigation (direct manipulation, like an infinite canvas):
 
 - Scroll wheel, or a trackpad two-finger drag, pans the diagram.
 - ++ctrl++ (or ++cmd++) + scroll, and a trackpad pinch, zoom in and out centered on the cursor.

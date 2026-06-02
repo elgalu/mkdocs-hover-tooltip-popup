@@ -365,11 +365,11 @@ class TestPluginValidation:
         plugin._validate_config()
         assert plugin.config["key"] == "alt"
 
-    def test_validate_config_invalid_navigation_falls_back_to_miro(self, plugin):
-        """An unrecognized 'navigation' value is reset to the 'miro' default."""
+    def test_validate_config_invalid_navigation_falls_back_to_canvas(self, plugin):
+        """An unrecognized 'navigation' value is reset to the 'canvas' default."""
         plugin.config = {"navigation": "joystick"}
         plugin._validate_config()
-        assert plugin.config["navigation"] == "miro"
+        assert plugin.config["navigation"] == "canvas"
 
     def test_validate_config_classic_navigation_is_kept(self, plugin):
         """A valid 'navigation' value ('classic') is preserved."""
@@ -377,10 +377,10 @@ class TestPluginValidation:
         plugin._validate_config()
         assert plugin.config["navigation"] == "classic"
 
-    def test_navigation_defaults_to_miro(self, plugin):
-        """The navigation option defaults to 'miro' in the config scheme."""
+    def test_navigation_defaults_to_canvas(self, plugin):
+        """The navigation option defaults to 'canvas' in the config scheme."""
         defaults = {key: opt.default for key, opt in plugin.config_scheme}
-        assert defaults["navigation"] == "miro"
+        assert defaults["navigation"] == "canvas"
 
     def test_validate_config_invalid_hint_location_falls_back(self, plugin):
         """An unrecognized 'hint_location' is reset to the 'bottom' default."""

@@ -267,8 +267,8 @@ class TestPanzoomAddition:
         content = meta_tag.get("content", "")
         assert "selectors" in content
         assert "initial_zoom_level" in content
-        # navigation mode is emitted for the runtime; defaults to "miro"
-        assert '"navigation": "miro"' in content
+        # navigation mode is emitted for the runtime; defaults to "canvas"
+        assert '"navigation": "canvas"' in content
 
     def test_no_assets_injected_without_diagrams(
         self, basic_config, mock_page, mock_mkdocs_config
@@ -578,7 +578,7 @@ class TestYamlMetadataParsing:
         <head><title>Test</title></head>
         <body>
             <pre class="mermaid"><code>---
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart LR
     A --> B</code></pre>
@@ -604,7 +604,7 @@ flowchart LR
         <head><title>Test</title></head>
         <body>
             <pre class="mermaid"><code>---
-panzoom: { enabled: true }
+hover-tooltip-popup: { enabled: true }
 ---
 flowchart LR
     A --> B</code></pre>
@@ -647,7 +647,7 @@ flowchart LR
         <head><title>Test</title></head>
         <body>
             <pre class="mermaid"><code>---
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart LR
     A --> B</code></pre>
@@ -655,7 +655,7 @@ flowchart LR
     C --> D</code></pre>
             <pre class="mermaid"><code>---
 title: Enabled Diagram
-panzoom: { enabled: true }
+hover-tooltip-popup: { enabled: true }
 ---
 graph TB
     E --> F</code></pre>
@@ -680,7 +680,7 @@ graph TB
                 if code_element:
                     content = code_element.get_text()
                     # Should not contain the disabled diagram
-                    assert "panzoom: { enabled: false }" not in content
+                    assert "hover-tooltip-popup: { enabled: false }" not in content
 
     def test_non_mermaid_elements_unaffected(self, basic_config, mock_page, mock_mkdocs_config):
         """Test that non-Mermaid elements are not affected by YAML parsing."""
@@ -691,7 +691,7 @@ graph TB
             <img src="test.jpg" alt="test">
             <div class="d2">D2 content</div>
             <pre class="mermaid"><code>---
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart LR
     A --> B</code></pre>
@@ -773,7 +773,7 @@ class TestSizeBasedAutoDetection:
         <head><title>Test</title></head>
         <body>
             <pre class="mermaid"><code>---
-panzoom: { enabled: true }
+hover-tooltip-popup: { enabled: true }
 ---
 flowchart LR
     A --> B</code></pre>
@@ -795,7 +795,7 @@ flowchart LR
         <head><title>Test</title></head>
         <body>
             <pre class="mermaid"><code>---
-panzoom: { enabled: false }
+hover-tooltip-popup: { enabled: false }
 ---
 flowchart TD
     A[Start Process] --> B{Decision Point}

@@ -204,8 +204,9 @@ function add_buttons(box, instance, zoomStep = DEFAULT_ZOOM_STEP) {
   });
 }
 
-// Miro-style navigation, layered on top of panzoom's public API. The library's own
-// mouse/wheel handlers are vetoed (see beforeWheel/beforeMouseDown), so we own input:
+// Canvas-style navigation (direct manipulation, like an infinite canvas), layered on
+// top of panzoom's public API. The library's own mouse/wheel handlers are vetoed (see
+// beforeWheel/beforeMouseDown), so we own input:
 //
 //   - Wheel / trackpad two-finger drag (no ctrl) -> PAN. Browsers report trackpad
 //     scrolling as wheel events with deltaX/deltaY and ctrlKey=false.
@@ -215,7 +216,7 @@ function add_buttons(box, instance, zoomStep = DEFAULT_ZOOM_STEP) {
 //
 // Left click is left untouched, so clicking diagram nodes and hovering/clicking inside
 // tooltips keeps working.
-function setupMiroNavigation(elem, box, instance, zoomStep) {
+function setupCanvasNavigation(elem, box, instance, zoomStep) {
   // Mirror panzoom's own wheel-zoom curve so wheel-zoom matches the +/- buttons:
   // scaleMultiplier = 1 - sign(delta) * min(0.25, |zoomStep * delta / 128|).
   function wheelScaleMultiplier(delta) {
@@ -255,7 +256,7 @@ function setupMiroNavigation(elem, box, instance, zoomStep) {
 
   box.addEventListener("mousedown", function (e) {
     if (e.button !== 2) {
-      return; // only the right button starts a Miro pan; left stays free
+      return; // only the right button starts a canvas pan; left stays free
     }
     e.preventDefault();
     panning = true;
@@ -295,14 +296,14 @@ function activate_zoom_pan() {
   let zoomStep = DEFAULT_ZOOM_STEP; // Default zoom step
   let buttonsSize = "1.25em"; // Default button size
 
-  let navigation = "miro"; // Default navigation mode
+  let navigation = "canvas"; // Default navigation mode
   try {
     panzoomData = JSON.parse(meta_tag.content);
     selectors = panzoomData.selectors || [];
     initialZoomLevel = panzoomData.initial_zoom_level ?? DEFAULT_ZOOM_LEVEL;
     zoomStep = panzoomData.zoom_step ?? DEFAULT_ZOOM_STEP;
     buttonsSize = panzoomData.buttons_size ?? "1.25em";
-    navigation = panzoomData.navigation ?? "miro";
+    navigation = panzoomData.navigation ?? "canvas";
   } catch (e) {
     console.warn('Failed to parse panzoom data:', e);
   }
@@ -340,49 +341,40 @@ function activate_zoom_pan() {
     ) {
       elem.dataset.zoom = true;
 
-      const miro = navigation === "miro";
+      const canvas = navigation === "canvas";
 
-      // In Miro mode we drive pan/zoom ourselves (see setupMiroNavigation): veto the
-      // library's built-in wheel and mouse-drag handling by returning truthy here. In
-      // classic mode the chosen modifier key gates the library's left-drag pan + wheel zoom.
+      // panzoom's beforeWheel/beforeMouseDown VETO the built-in handler when they
+      // return truthy. In classic mode the configured modifier key ENABLES pan/zoom
+      // while held, so we veto only when the required modifier is absent. `none`
+      // means always on (never veto). In canvas mode we always veto and drive input
+      // ourselves (see setupCanvasNavigation).
+      function classicVeto(e) {
+        switch (key) {
+          case "ctrl":
+            return !e.ctrlKey; // veto unless ctrl held
+          case "shift":
+            return !e.shiftKey;
+          case "alt":
+            return !e.altKey;
+          default: // "none": pan/zoom always active
+            return false;
+        }
+      }
+
       let instance = panzoom(elem, {
         minZoom: 0.5,
         zoomSpeed: zoomStep,
         beforeWheel: function (e) {
-          if (miro) {
-            return true; // veto built-in wheel; handled by setupMiroNavigation
-          }
-          switch (key) {
-            case "ctrl":
-              return e.ctrlKey;
-            case "shift":
-              return e.shiftKey;
-            case "alt":
-              return e.altKey;
-            default:
-              return !e.button == 1;
-          }
+          return canvas ? true : classicVeto(e);
         },
         beforeMouseDown: function (e) {
-          if (miro) {
-            return true; // veto built-in mouse drag; handled by setupMiroNavigation
-          }
-          switch (key) {
-            case "ctrl":
-              return e.ctrlKey && !e.button == 1;
-            case "shift":
-              return e.shiftKey && !e.button == 1;
-            case "alt":
-              return e.altKey && !e.button == 1;
-            default:
-              return !e.button == 1;
-          }
+          return canvas ? true : classicVeto(e);
         },
         zoomDoubleClickSpeed: 1,
       });
 
-      if (miro) {
-        setupMiroNavigation(elem, box, instance, zoomStep);
+      if (canvas) {
+        setupCanvasNavigation(elem, box, instance, zoomStep);
       }
 
       // Intercept keyboard zoom events to use our symmetric zoom functions

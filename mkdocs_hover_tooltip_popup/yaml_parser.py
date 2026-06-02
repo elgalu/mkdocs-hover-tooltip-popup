@@ -7,6 +7,10 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# Frontmatter key authors use to opt a single diagram in/out, e.g.
+# `hover-tooltip-popup: { enabled: false }`.
+OPT_OUT_KEY = "hover-tooltip-popup"
+
 
 def parse_mermaid_yaml_metadata(content: str) -> dict[str, Any]:
     """Parse YAML metadata from Mermaid diagram content.
@@ -27,13 +31,13 @@ def parse_mermaid_yaml_metadata(content: str) -> dict[str, Any]:
     ```
     ---
     title: My Diagram
-    panzoom: { enabled: false }
+    hover-tooltip-popup: { enabled: false }
     ---
     graph TD
         A --> B
     ```
 
-    Returns: {"title": "My Diagram", "panzoom": {"enabled": False}}
+    Returns: {"title": "My Diagram", "hover-tooltip-popup": {"enabled": False}}
 
     """
     metadata: dict[str, Any] = {}
@@ -66,12 +70,12 @@ def parse_mermaid_yaml_metadata(content: str) -> dict[str, Any]:
                 value = value.strip()
 
                 # Handle different value types
-                if key == "panzoom":
-                    # Parse panzoom object syntax: { enabled: false }
+                if key == OPT_OUT_KEY:
+                    # Parse object syntax: { enabled: false }
                     if value.startswith("{") and value.endswith("}"):
                         # Extract content between braces
                         obj_content = value[1:-1].strip()
-                        panzoom_config = {}
+                        opt_out_config = {}
 
                         # Parse key: value pairs within the object
                         for pair in obj_content.split(","):
@@ -86,9 +90,9 @@ def parse_mermaid_yaml_metadata(content: str) -> dict[str, Any]:
                                 elif obj_value.lower() == "false":
                                     obj_value = False
 
-                                panzoom_config[obj_key] = obj_value
+                                opt_out_config[obj_key] = obj_value
 
-                        metadata[key] = panzoom_config
+                        metadata[key] = opt_out_config
                     else:
                         # Handle as string value
                         metadata[key] = str(value)
@@ -259,12 +263,12 @@ def should_enable_panzoom(content: str, thresholds: dict[str, int] | None = None
 
     """
     metadata = parse_mermaid_yaml_metadata(content)
-    panzoom_config = metadata.get("panzoom", {})
+    opt_out_config = metadata.get(OPT_OUT_KEY, {})
 
-    # If user explicitly set panzoom.enabled in YAML, respect that choice
-    if isinstance(panzoom_config, dict) and "enabled" in panzoom_config:
-        enabled = panzoom_config.get("enabled", True)
-        logger.debug(f"Using explicit panzoom setting: {enabled}")
+    # If the author explicitly set `enabled` in the diagram frontmatter, respect it.
+    if isinstance(opt_out_config, dict) and "enabled" in opt_out_config:
+        enabled = opt_out_config.get("enabled", True)
+        logger.debug(f"Using explicit {OPT_OUT_KEY} setting: {enabled}")
         return bool(enabled)
 
     # No explicit setting found - use size-based auto-detection
