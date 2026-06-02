@@ -86,7 +86,10 @@ Runtime assets:
   `<meta name="hover-tooltip-popup-theme">` tags, wires up panzoom on each `.hover-tooltip-popup-box`, persists
   zoom/pan state per diagram in `localStorage` (auto-cleared after 30 days), implements
   reset/fullscreen/hint behavior, and wires per-node hover tooltips.
-- `mkdocs_hover_tooltip_popup/panzoom/panzoom.min.js`: third-party library, do not edit.
+- `mkdocs_hover_tooltip_popup/panzoom/panzoom.min.js`: pan/zoom engine, originally vendored
+  from [anvaka/panzoom](https://github.com/anvaka/panzoom) (MIT). We now maintain it as a
+  forked copy and edit it directly when the upstream API can't express what we need (e.g.
+  Miro-style navigation). Keep the anvaka MIT `LICENCE` alongside it.
 
 Box structure (`box.py::create_box`): the `nav` always contains a reset
 button; info button is added unless `always_show_hint`; zoom-in/out buttons added when
@@ -221,7 +224,7 @@ cause it to find no elements (or, for `mermaid2`, raise `ConfigurationError` in 
 | `mkdocs_hover_tooltip_popup/`         | Plugin source                                                                 |
 | `mkdocs_hover_tooltip_popup/custom/`  | Bundled CSS + project JS (`hover-tooltip-popup.js`)                           |
 | `mkdocs_hover_tooltip_popup/box.py`   | Builds the control-box DOM (`create_box`)                                     |
-| `mkdocs_hover_tooltip_popup/panzoom/` | Third-party anvaka `panzoom.min.js` pan/zoom engine (do not edit)             |
+| `mkdocs_hover_tooltip_popup/panzoom/` | `panzoom.min.js` pan/zoom engine, forked from anvaka (MIT); edit when needed  |
 | `tests/`                              | Unit tests, one file per source module                                        |
 | `tests/e2e/`                          | Headless-browser E2E tests (Playwright); marked `e2e`, skip if no browser     |
 | `docs/`                               | MkDocs documentation source (Mermaid/, D2/, etc.)                             |
